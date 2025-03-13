@@ -17,10 +17,17 @@ interface TaskInputProps {
     duration?: string;
     scheduledFor?: string;
   }) => void;
+  onMultipleTasksAdd?: (tasksData: Array<{
+    title: string;
+    category?: TaskCategory;
+    priority?: TaskPriority;
+    duration?: string;
+    scheduledFor?: string;
+  }>) => void;
   isEmpty: boolean;
 }
 
-export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, isEmpty }) => {
+export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, onMultipleTasksAdd, isEmpty }) => {
   const [title, setTitle] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,18 +40,42 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, isEmpty }) => {
       
       try {
         // Extract task information using Gemini Flash API
-        const extractedInfo = await extractTaskInfo(title.trim());
+        const extractedTasks = await extractTaskInfo(title.trim());
         
-        // Allow animation to start before adding task
+        // Allow animation to start before adding tasks
         requestAnimationFrame(() => {
           setTimeout(() => {
-            onTaskAdd({
-              title: extractedInfo.taskTitle,
-              category: extractedInfo.category,
-              priority: extractedInfo.priority,
-              duration: extractedInfo.duration,
-              scheduledFor: extractedInfo.scheduledFor
-            });
+            // Handle multiple tasks if detected
+            if (extractedTasks.length > 0) {
+              if (extractedTasks.length > 1 && onMultipleTasksAdd) {
+                // If we have multiple tasks and the handler is available, use it
+                const formattedTasks = extractedTasks.map(taskInfo => ({
+                  title: taskInfo.taskTitle,
+                  category: taskInfo.category,
+                  priority: taskInfo.priority,
+                  duration: taskInfo.duration,
+                  scheduledFor: taskInfo.scheduledFor
+                }));
+                
+                onMultipleTasksAdd(formattedTasks);
+                console.log(`Created ${extractedTasks.length} tasks from input`);
+              } else {
+                // Otherwise, add each task individually (fallback or single task)
+                extractedTasks.forEach(taskInfo => {
+                  onTaskAdd({
+                    title: taskInfo.taskTitle,
+                    category: taskInfo.category,
+                    priority: taskInfo.priority,
+                    duration: taskInfo.duration,
+                    scheduledFor: taskInfo.scheduledFor
+                  });
+                });
+              }
+            } else {
+              // Fallback to basic task creation if no tasks were extracted
+              onTaskAdd({ title: title.trim() });
+            }
+            
             setTitle('');
             setIsAnimating(false);
             setIsProcessing(false);

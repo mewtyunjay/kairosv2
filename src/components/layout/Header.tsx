@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, onThemeToggle, tasks
 
   return (
     <header className="fixed top-0 left-0 right-0 bg-background-light dark:bg-background-dark shadow-header transition-colors z-50">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <h1 className="text-4xl text-primary-light dark:text-primary-dark">
           Kairos
         </h1>

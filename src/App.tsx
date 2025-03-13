@@ -62,7 +62,30 @@ function App() {
       progress: 0,
       createdAt: new Date().toISOString()
     };
-    setTasks([...tasks, newTask]);
+    setTasks(prevTasks => [...prevTasks, newTask]);
+  };
+  
+  // Add multiple tasks at once
+  const handleMultipleTasksAdd = (tasksData: Array<{
+    title: string;
+    category?: TaskCategory;
+    priority?: TaskPriority;
+    duration?: string;
+    scheduledFor?: string;
+  }>) => {
+    const newTasks = tasksData.map(taskData => ({
+      id: crypto.randomUUID(),
+      title: taskData.title,
+      category: taskData.category || 'Other',
+      priority: taskData.priority || 'Medium',
+      duration: taskData.duration,
+      scheduledFor: taskData.scheduledFor,
+      completed: false,
+      progress: 0,
+      createdAt: new Date().toISOString()
+    }));
+    
+    setTasks(prevTasks => [...prevTasks, ...newTasks]);
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
@@ -105,8 +128,8 @@ function App() {
         onCategoryUpdate={handleCategoryUpdate}
         onCategoryDelete={handleCategoryDelete}
       />
-      <main className="pt-20 px-4 pb-24">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <main className="pt-20 pb-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Active Tasks */}
           <div>
             <h2 className="text-2xl font-semibold mb-4">Active Tasks</h2>
@@ -150,7 +173,11 @@ function App() {
           )}
         </div>
       </main>
-      <TaskInput onTaskAdd={handleTaskAdd} isEmpty={tasks.length === 0} />
+      <TaskInput 
+        onTaskAdd={handleTaskAdd} 
+        onMultipleTasksAdd={handleMultipleTasksAdd} 
+        isEmpty={tasks.length === 0} 
+      />
     </div>
   );
 }

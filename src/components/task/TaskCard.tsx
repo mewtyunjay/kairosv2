@@ -3,7 +3,7 @@
  * Updated: Fixed task completion state and styling sync
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import type { Task, TaskCategory, TaskPriority } from '../../types/task';
 import type { CategoryPreference } from '../../types/user';
 import { Check, Calendar, Trash2 } from 'lucide-react';
@@ -22,12 +22,51 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate, 
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
   const [showCalendarDropdown, setShowCalendarDropdown] = useState(false);
   
+  // Refs for dropdown containers
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
+  const priorityDropdownRef = useRef<HTMLDivElement>(null);
+  const calendarDropdownRef = useRef<HTMLDivElement>(null);
+  
   const [editedTask, setEditedTask] = useState<Task>(task);
 
   // Keep editedTask in sync with prop changes
   React.useEffect(() => {
     setEditedTask(task);
   }, [task]);
+  
+  // Handle click outside to close dropdowns
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close category dropdown if clicked outside
+      if (showCategoryDropdown && 
+          categoryDropdownRef.current && 
+          !categoryDropdownRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+      
+      // Close priority dropdown if clicked outside
+      if (showPriorityDropdown && 
+          priorityDropdownRef.current && 
+          !priorityDropdownRef.current.contains(event.target as Node)) {
+        setShowPriorityDropdown(false);
+      }
+      
+      // Close calendar dropdown if clicked outside
+      if (showCalendarDropdown && 
+          calendarDropdownRef.current && 
+          !calendarDropdownRef.current.contains(event.target as Node)) {
+        setShowCalendarDropdown(false);
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Cleanup function
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryDropdown, showPriorityDropdown, showCalendarDropdown]);
 
   const handleUpdate = () => {
     if (onUpdate) {
@@ -201,7 +240,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate, 
       ${task.completed ? 'bg-gray-50 dark:bg-gray-700/50 opacity-75' : ''}
     `}>
       <div className="flex justify-between items-start mb-3">
-        <div className="relative">
+        <div className="relative" ref={categoryDropdownRef}>
           <button
             onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
             className="px-2 py-1 rounded-full text-xs flex items-center gap-1"
@@ -237,29 +276,60 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate, 
           )}
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
-            className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getPriorityColor(editedTask.priority)}`}
-          >
-            {editedTask.priority}
-          </button>
+        <div className="flex items-center gap-2">
+          <div className="relative" ref={priorityDropdownRef}>
+            <button
+              onClick={() => setShowPriorityDropdown(!showPriorityDropdown)}
+              className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getPriorityColor(editedTask.priority)}`}
+            >
+              {editedTask.priority}
+            </button>
 
-          {showPriorityDropdown && (
-            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10">
-              {priorities.map(priority => (
-                <button
-                  key={priority}
-                  onClick={() => {
-                    setEditedTask({ ...editedTask, priority });
-                    setShowPriorityDropdown(false);
-                    handleUpdate();
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 ${getPriorityColor(priority)}`}
-                >
-                  {priority}
-                </button>
-              ))}
+            {showPriorityDropdown && (
+              <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10">
+                {priorities.map(priority => (
+                  <button
+                    key={priority}
+                    onClick={() => {
+                      setEditedTask({ ...editedTask, priority });
+                      setShowPriorityDropdown(false);
+                      handleUpdate();
+                    }}
+                    className={`block w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 ${getPriorityColor(priority)}`}
+                  >
+                    {priority}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          {editedTask.scheduledFor && (
+            <div className="relative" ref={calendarDropdownRef}>
+              <button
+                onClick={() => setShowCalendarDropdown(!showCalendarDropdown)}
+                className="flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+              >
+                <Calendar className="w-3 h-3" />
+                Add to Calendar
+              </button>
+
+              {showCalendarDropdown && (
+                <div className="absolute top-full right-0 mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 min-w-[160px]">
+                  <button
+                    onClick={addToGoogleCalendar}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Google Calendar
+                  </button>
+                  <button
+                    onClick={addToAppleCalendar}
+                    className="w-full text-left px-4 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Apple Calendar
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -291,34 +361,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate, 
       />
 
       <div className="absolute bottom-4 right-4 flex items-center gap-2">
-        {editedTask.scheduledFor && (
-          <div className="relative">
-            <button
-              onClick={() => setShowCalendarDropdown(!showCalendarDropdown)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <Calendar className="w-4 h-4" />
-              Add to calendar
-            </button>
-
-            {showCalendarDropdown && (
-              <div className="absolute bottom-full right-0 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 min-w-[160px]">
-                <button
-                  onClick={addToGoogleCalendar}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Google Calendar
-                </button>
-                <button
-                  onClick={addToAppleCalendar}
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Apple Calendar
-                </button>
-              </div>
-            )}
-          </div>
-        )}
 
         <button
           onClick={handleDelete}

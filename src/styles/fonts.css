@@ -1,0 +1,9 @@
+/**
+ * Custom font styles for Kairos
+ * Updated: Fixed font imports to use correct paths
+ */
+
+@import '@fontsource/young-serif';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';

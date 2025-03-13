@@ -130,12 +130,11 @@ function App() {
       />
       <main className="pt-20 pb-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          {/* Active Tasks */}
-          <div>
-            <h2 className="text-2xl font-semibold mb-4">Active Tasks</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activeTasks.length > 0 ? (
-                activeTasks.map(task => (
+          {activeTasks.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Active Tasks</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {activeTasks.map(task => (
                   <TaskCard 
                     key={task.id} 
                     task={task}
@@ -143,17 +142,17 @@ function App() {
                     onUpdate={handleTaskUpdate}
                     onDelete={handleTaskDelete}
                   />
-                ))
-              ) : tasks.length > 0 ? (
-                <div className="col-span-full flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-card text-center">
-                  <PartyPopper className="w-12 h-12 text-yellow-400 mb-4" />
-                  <h3 className="text-2xl font-semibold mb-2">You're all done for the day!</h3>
-                  <p className="text-gray-600 dark:text-gray-400">Time to celebrate your productivity!</p>
-                </div>
-              ) : null}
+                ))}
+              </div>
             </div>
-          </div>
-
+          )}
+          {tasks.length > 0 && activeTasks.length === 0 && (
+            <div className="col-span-full flex flex-col items-center justify-center p-8 bg-white dark:bg-gray-800 rounded-xl shadow-card text-center">
+              <PartyPopper className="w-12 h-12 text-yellow-400 mb-4" />
+              <h3 className="text-2xl font-semibold mb-2">You're all done for the day!</h3>
+              <p className="text-gray-600 dark:text-gray-400">Time to celebrate your productivity!</p>
+            </div>
+          )}
           {/* Completed Tasks */}
           {completedTasks.length > 0 && (
             <div>

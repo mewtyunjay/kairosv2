@@ -3,7 +3,7 @@
  * Updated: Fixed task completion state and styling sync
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import type { Task, TaskCategory, TaskPriority } from '../../types/task';
 import type { CategoryPreference } from '../../types/user';
 import { Check, Calendar, Trash2 } from 'lucide-react';

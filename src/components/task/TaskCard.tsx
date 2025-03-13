@@ -6,16 +6,17 @@
 import React, { useState } from 'react';
 import type { Task, TaskCategory, TaskPriority } from '../../types/task';
 import type { CategoryPreference } from '../../types/user';
-import { Check, Calendar } from 'lucide-react';
+import { Check, Calendar, Trash2 } from 'lucide-react';
 import { TaskTimeInput } from './TaskTimeInput';
 
 interface TaskCardProps {
   task: Task;
   categories: CategoryPreference[];
   onUpdate?: (updatedTask: Task) => void;
+  onDelete?: (taskId: string) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate, onDelete }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
@@ -43,6 +44,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate }
     setEditedTask(updatedTask);
     if (onUpdate) {
       onUpdate(updatedTask);
+    }
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(task.id);
     }
   };
 
@@ -312,6 +319,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task, categories, onUpdate }
             )}
           </div>
         )}
+
+        <button
+          onClick={handleDelete}
+          className="p-2 rounded-full bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400 hover:bg-opacity-80 transition-colors"
+          aria-label="Delete task"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
 
         <button
           onClick={toggleComplete}

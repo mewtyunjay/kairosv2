@@ -3,7 +3,8 @@
  * Updated: Added categories prop to TaskCard for custom category support
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useLocalStorage } from './hooks/useLocalStorage';
 import { Header } from './components/layout/Header';
 import { TaskInput } from './components/task/TaskInput';
 import { TaskCard } from './components/task/TaskCard';
@@ -21,15 +22,12 @@ const defaultCategories: CategoryPreference[] = [
 ];
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
-  });
+  const [isDarkMode, setIsDarkMode] = useLocalStorage<boolean>('kairosTheme', 
+    typeof window !== 'undefined' ? window.matchMedia('(prefers-color-scheme: dark)').matches : false
+  );
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [categories, setCategories] = useState<CategoryPreference[]>(defaultCategories);
+  const [tasks, setTasks] = useLocalStorage<Task[]>('kairosTasks', []);
+  const [categories, setCategories] = useLocalStorage<CategoryPreference[]>('kairosCategories', defaultCategories);
 
   const activeTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
@@ -71,6 +69,10 @@ function App() {
     setTasks(tasks.map(task => 
       task.id === updatedTask.id ? updatedTask : task
     ));
+  };
+
+  const handleTaskDelete = (taskId: string) => {
+    setTasks(tasks.filter(task => task.id !== taskId));
   };
 
   const handleCategoryAdd = (category: Omit<CategoryPreference, 'id'>) => {
@@ -116,6 +118,7 @@ function App() {
                     task={task}
                     categories={categories}
                     onUpdate={handleTaskUpdate}
+                    onDelete={handleTaskDelete}
                   />
                 ))
               ) : tasks.length > 0 ? (
@@ -139,6 +142,7 @@ function App() {
                     task={task}
                     categories={categories}
                     onUpdate={handleTaskUpdate}
+                    onDelete={handleTaskDelete}
                   />
                 ))}
               </div>

@@ -68,7 +68,17 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse> => {
       ${schema}
       
       Return a JSON object with these fields: taskTitle, category, priority, duration, scheduledFor.
-      Only include fields if they're clearly specified in the text.
+      
+      For the duration field:
+      - If the user explicitly specifies a duration, use that value
+      - If not specified, intelligently estimate a reasonable duration based on the task complexity:
+        - Simple tasks (e.g., "reply to email", "make a call"): 00:30 (30 minutes)
+        - Medium tasks (e.g., "write a report", "prepare presentation"): 01:00 (1 hour)
+        - Complex tasks (e.g., "code a feature", "research topic"): 02:00 (2 hours)
+        - Very complex tasks (e.g., "complete project", "develop application"): 04:00 (4 hours)
+      - Format as HH:MM (hours:minutes)
+      
+      For other fields, only include them if they're clearly specified in the text.
       Example response format:
       {"taskTitle":"Design landing page","category":"Work","priority":"High","duration":"02:00","scheduledFor":"9:00 AM - 11:00 AM"}
     `;
@@ -82,14 +92,15 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse> => {
     console.log('Gemini API received response:', taskData);
     const parsedData = JSON.parse(taskData) as TaskResponse;
     
-    // Set default duration of 1 hour if not specified
+    // Gemini should now provide an intelligent duration estimate,
+    // but we'll still have a fallback default of 1 hour just in case
     const defaultDuration = "01:00";
     
     return {
       taskTitle: parsedData.taskTitle || text,
       category: parsedData.category as TaskCategory,
       priority: parsedData.priority as TaskPriority,
-      duration: parsedData.duration || defaultDuration, // Use default if not provided
+      duration: parsedData.duration || defaultDuration, // Use default only if Gemini fails to provide a duration
       scheduledFor: parsedData.scheduledFor
     };
     

@@ -19,7 +19,49 @@ interface MultiTaskResponse {
   tasks: TaskResponse[];
 }
 
-export const extractTaskInfo = async (text: string): Promise<TaskResponse[]> => {
+// Helper function to parse time string (e.g., "9:00 AM") to hours and minutes
+const parseTime = (timeStr: string) => {
+  const [time, period] = timeStr.split(' ');
+  let [hours, minutes] = time.split(':').map(Number);
+  if (period === 'PM' && hours !== 12) hours += 12;
+  if (period === 'AM' && hours === 12) hours = 0;
+  return { hours, minutes };
+};
+
+// Helper function to format time from hours and minutes to string (e.g., "9:00 AM")
+const formatTime = (hours: number, minutes: number) => {
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+  return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`;
+};
+
+// Helper function to calculate end time based on start time and duration
+const calculateEndTime = (startTime: string, duration: string) => {
+  const start = parseTime(startTime);
+  const [durationHours, durationMinutes] = duration.split(':').map(Number);
+  
+  let totalMinutes = start.minutes + durationMinutes;
+  let totalHours = start.hours + durationHours + Math.floor(totalMinutes / 60);
+  totalMinutes %= 60;
+  totalHours %= 24;
+
+  return formatTime(totalHours, totalMinutes);
+};
+
+// Ensure scheduledFor has correct end time based on start time and duration
+const validateScheduledFor = (scheduledFor?: string, duration?: string): string | undefined => {
+  if (!scheduledFor || !duration) return scheduledFor;
+  
+  const parts = scheduledFor.split(' - ');
+  if (parts.length !== 2) return scheduledFor;
+  
+  const startTime = parts[0];
+  const calculatedEndTime = calculateEndTime(startTime, duration);
+  
+  return `${startTime} - ${calculatedEndTime}`;
+};
+
+export const extractTaskInfo = async (text: string, autoAssignTime: boolean = false): Promise<TaskResponse[]> => {
   try {
     // Initialize the Gemini API client
     const genAI = new GoogleGenerativeAI(API_KEY);
@@ -69,6 +111,37 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse[]> => 
       }
     `;
 
+    // Get current time to use as reference for scheduling tasks
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Format current time for the prompt
+    const currentTimeFormatted = formatTime(currentHour, currentMinute);
+    
+    // Build the prompt with or without auto time assignment instructions
+    let timeAssignmentInstructions = '';
+    
+    if (autoAssignTime) {
+      timeAssignmentInstructions = `
+      For the scheduledFor field:
+      - If the user explicitly mentions a time, use that time
+      - If no time is specified but auto-assign time is enabled, intelligently assign a reasonable time:
+        - Use the current time (${currentTimeFormatted}) as a reference
+        - For tasks that seem urgent or important, schedule them soon after the current time
+        - For regular daily activities, schedule them at typical times (e.g., lunch around noon)
+        - For tasks that require focus, avoid scheduling during typical meeting times
+        - Distribute tasks throughout the day to avoid overlaps
+        - Format as "HH:MM AM/PM - HH:MM AM/PM" (start time - end time)
+      `;
+    } else {
+      timeAssignmentInstructions = `
+      For the scheduledFor field:
+      - Only include this if the user explicitly mentions a time
+      - Format as "HH:MM AM/PM - HH:MM AM/PM" (start time - end time)
+      `;
+    }
+
     const prompt = `
       Extract structured task information from this description: "${text}"
       Since you know the schema, format the tasks based on what the field is for. For eg, if a user says 5PPM, you know it means 5PM.
@@ -88,6 +161,8 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse[]> => 
         - Meals (e.g., "breakfast", "lunch", "dinner"): 00:30 (30 minutes)
         - Sleep: Calculate based on the time range or default to 08:00 (8 hours)
       - Format as HH:MM (hours:minutes)
+      
+      ${timeAssignmentInstructions}
       
       For other fields, only include them if they're clearly specified in the text.
       
@@ -125,13 +200,18 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse[]> => 
         // Process each task and apply defaults where needed
         const defaultDuration = "01:00";
         
-        return parsedData.tasks.map(task => ({
-          taskTitle: task.taskTitle || text,
-          category: task.category as TaskCategory,
-          priority: task.priority as TaskPriority,
-          duration: task.duration || defaultDuration,
-          scheduledFor: task.scheduledFor
-        }));
+        return parsedData.tasks.map(task => {
+          const duration = task.duration || defaultDuration;
+          const scheduledFor = validateScheduledFor(task.scheduledFor, duration);
+          
+          return {
+            taskTitle: task.taskTitle || text,
+            category: task.category as TaskCategory,
+            priority: task.priority as TaskPriority,
+            duration,
+            scheduledFor
+          };
+        });
       }
       
       // If we get here but no tasks array, return a single task with the original text
@@ -144,12 +224,15 @@ export const extractTaskInfo = async (text: string): Promise<TaskResponse[]> => 
         const parsedData = JSON.parse(taskData) as TaskResponse;
         const defaultDuration = "01:00";
         
+        const duration = parsedData.duration || defaultDuration;
+        const scheduledFor = validateScheduledFor(parsedData.scheduledFor, duration);
+        
         return [{
           taskTitle: parsedData.taskTitle || text,
           category: parsedData.category as TaskCategory,
           priority: parsedData.priority as TaskPriority,
-          duration: parsedData.duration || defaultDuration,
-          scheduledFor: parsedData.scheduledFor
+          duration,
+          scheduledFor
         }];
       } catch (innerError) {
         console.error('Error parsing single task format:', innerError);

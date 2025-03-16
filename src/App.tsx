@@ -3,7 +3,7 @@
  * Updated: Added categories prop to TaskCard for custom category support
  */
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Header } from './components/layout/Header';
 import { TaskInput } from './components/task/TaskInput';
@@ -12,6 +12,7 @@ import { PartyPopper } from 'lucide-react';
 import './styles/fonts.css';
 import type { Task, TaskCategory, TaskPriority } from './types/task';
 import type { CategoryPreference } from './types/user';
+import { v4 as uuidv4 } from 'uuid';
 
 const defaultCategories: CategoryPreference[] = [
   { id: 'work', name: 'Work', color: '#ff7675', isDefault: true },
@@ -28,6 +29,7 @@ function App() {
 
   const [tasks, setTasks] = useLocalStorage<Task[]>('kairosTasks', []);
   const [categories, setCategories] = useLocalStorage<CategoryPreference[]>('kairosCategories', defaultCategories);
+  const [autoAssignTime, setAutoAssignTime] = useLocalStorage<boolean>('kairosAutoAssignTime', false);
 
   const activeTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
@@ -44,6 +46,10 @@ function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  const handleAutoAssignTimeToggle = () => {
+    setAutoAssignTime(!autoAssignTime);
+  };
+
   const handleTaskAdd = (taskData: {
     title: string;
     category?: TaskCategory;
@@ -52,7 +58,7 @@ function App() {
     scheduledFor?: string;
   }) => {
     const newTask: Task = {
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       title: taskData.title,
       category: taskData.category || 'Other',
       priority: taskData.priority || 'Medium',
@@ -74,7 +80,7 @@ function App() {
     scheduledFor?: string;
   }>) => {
     const newTasks = tasksData.map(taskData => ({
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       title: taskData.title,
       category: taskData.category || 'Other',
       priority: taskData.priority || 'Medium',
@@ -101,7 +107,7 @@ function App() {
   const handleCategoryAdd = (category: Omit<CategoryPreference, 'id'>) => {
     const newCategory = {
       ...category,
-      id: crypto.randomUUID(),
+      id: uuidv4(),
       isDefault: false,
     };
     setCategories([...categories, newCategory]);
@@ -122,6 +128,8 @@ function App() {
       <Header 
         isDarkMode={isDarkMode} 
         onThemeToggle={handleThemeToggle}
+        autoAssignTime={autoAssignTime}
+        onAutoAssignTimeToggle={handleAutoAssignTimeToggle}
         tasks={tasks}
         categories={categories}
         onCategoryAdd={handleCategoryAdd}
@@ -175,7 +183,8 @@ function App() {
       <TaskInput 
         onTaskAdd={handleTaskAdd} 
         onMultipleTasksAdd={handleMultipleTasksAdd} 
-        isEmpty={tasks.length === 0} 
+        isEmpty={tasks.length === 0}
+        autoAssignTime={autoAssignTime}
       />
     </div>
   );

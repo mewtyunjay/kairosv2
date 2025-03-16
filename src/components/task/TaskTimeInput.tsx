@@ -42,6 +42,20 @@ export const TaskTimeInput: React.FC<TaskTimeInputProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+  
+  // Effect to ensure end time is set when both start time and duration are present
+  useEffect(() => {
+    if (scheduledFor && duration) {
+      const [startTime, endTime] = scheduledFor.split(' - ');
+      const calculatedEndTime = calculateEndTime(startTime, duration);
+      
+      // If the end time doesn't match the calculated end time based on duration
+      if (endTime !== calculatedEndTime) {
+        const newScheduledFor = `${startTime} - ${calculatedEndTime}`;
+        onUpdate(duration, newScheduledFor);
+      }
+    }
+  }, [scheduledFor, duration]);
 
   const parseTime = (timeStr: string) => {
     const [time, period] = timeStr.split(' ');
@@ -122,18 +136,31 @@ export const TaskTimeInput: React.FC<TaskTimeInputProps> = ({
   const formatDuration = (duration?: string) => {
     if (!duration) return 'Set duration';
     const [hours, minutes] = duration.split(':');
-    return `${hours}h ${minutes}m`;
+    // More compact format
+    if (hours === '00') return `${parseInt(minutes)}m`;
+    if (minutes === '00') return `${parseInt(hours)}h`;
+    return `${parseInt(hours)}h${parseInt(minutes)}m`;
+  };
+
+  const formatTimeCompact = (timeStr?: string) => {
+    if (!timeStr) return '';
+    // Format time to be more compact but keep AM/PM
+    const [time, period] = timeStr.split(' ');
+    const [hours, minutes] = time.split(':');
+    
+    // If minutes is 00, don't show it
+    return minutes === '00' ? `${parseInt(hours)} ${period}` : `${parseInt(hours)}:${minutes} ${period}`;
   };
 
   return (
-    <div className="flex items-center gap-4 text-sm">
-      <div className="relative flex items-center gap-2" ref={durationRef}>
-        <Clock className="w-4 h-4 text-gray-500" />
+    <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+      <div className="relative flex items-center" ref={durationRef}>
         <button
           onClick={() => setShowDurationPicker(true)}
-          className="px-2 py-1 text-left rounded bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center gap-1 px-1.5 py-0.5 text-left rounded bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         >
-          {formatDuration(duration)}
+          <Clock className="w-3 h-3 text-gray-500" />
+          <span>{formatDuration(duration)}</span>
         </button>
         <TimePickerPopover
           isOpen={showDurationPicker}
@@ -144,39 +171,61 @@ export const TaskTimeInput: React.FC<TaskTimeInputProps> = ({
         />
       </div>
 
-      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
-        <div className="relative" ref={startTimeRef}>
-          <button
-            onClick={() => setShowStartTimePicker(true)}
-            className="px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            {scheduledFor ? scheduledFor.split(' - ')[0] : 'Start time'}
-          </button>
-          <TimePickerPopover
-            isOpen={showStartTimePicker}
-            onClose={() => setShowStartTimePicker(false)}
-            onSelect={(time) => handleScheduleChange('start', time)}
-            type="schedule"
-            value={scheduledFor?.split(' - ')[0]}
-          />
+      {scheduledFor && (
+        <div className="flex items-center text-gray-600 dark:text-gray-400">
+          <div className="relative" ref={startTimeRef}>
+            <button
+              onClick={() => setShowStartTimePicker(true)}
+              className="px-1.5 py-0.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {formatTimeCompact(scheduledFor.split(' - ')[0])}
+            </button>
+            <TimePickerPopover
+              isOpen={showStartTimePicker}
+              onClose={() => setShowStartTimePicker(false)}
+              onSelect={(time) => handleScheduleChange('start', time)}
+              type="schedule"
+              value={scheduledFor?.split(' - ')[0]}
+            />
+          </div>
+          <span className="mx-0.5">-</span>
+          <div className="relative" ref={endTimeRef}>
+            <button
+              onClick={() => setShowEndTimePicker(true)}
+              className="px-1.5 py-0.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              {formatTimeCompact(scheduledFor.split(' - ')[1])}
+            </button>
+            <TimePickerPopover
+              isOpen={showEndTimePicker}
+              onClose={() => setShowEndTimePicker(false)}
+              onSelect={(time) => handleScheduleChange('end', time)}
+              type="schedule"
+              value={scheduledFor?.split(' - ')[1]}
+            />
+          </div>
         </div>
-        <span>to</span>
-        <div className="relative" ref={endTimeRef}>
-          <button
-            onClick={() => setShowEndTimePicker(true)}
-            className="px-2 py-1 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            {scheduledFor ? scheduledFor.split(' - ')[1] : 'End time'}
-          </button>
-          <TimePickerPopover
-            isOpen={showEndTimePicker}
-            onClose={() => setShowEndTimePicker(false)}
-            onSelect={(time) => handleScheduleChange('end', time)}
-            type="schedule"
-            value={scheduledFor?.split(' - ')[1]}
-          />
+      )}
+      
+      {!scheduledFor && (
+        <div className="flex items-center text-gray-600 dark:text-gray-400">
+          <div className="relative" ref={startTimeRef}>
+            <button
+              onClick={() => setShowStartTimePicker(true)}
+              className="px-1.5 py-0.5 text-left rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500"
+            >
+              Set time
+            </button>
+            <TimePickerPopover
+              isOpen={showStartTimePicker}
+              onClose={() => setShowStartTimePicker(false)}
+              onSelect={(time) => handleScheduleChange('start', time)}
+              type="schedule"
+              value={undefined}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

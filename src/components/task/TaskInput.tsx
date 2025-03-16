@@ -25,9 +25,10 @@ interface TaskInputProps {
     scheduledFor?: string;
   }>) => void;
   isEmpty: boolean;
+  autoAssignTime?: boolean;
 }
 
-export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, onMultipleTasksAdd, isEmpty }) => {
+export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, onMultipleTasksAdd, isEmpty, autoAssignTime = false }) => {
   const [title, setTitle] = useState('');
   const [isAnimating, setIsAnimating] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -40,7 +41,7 @@ export const TaskInput: React.FC<TaskInputProps> = ({ onTaskAdd, onMultipleTasks
       
       try {
         // Extract task information using Gemini Flash API
-        const extractedTasks = await extractTaskInfo(title.trim());
+        const extractedTasks = await extractTaskInfo(title.trim(), autoAssignTime);
         
         // Allow animation to start before adding tasks
         requestAnimationFrame(() => {

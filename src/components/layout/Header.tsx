@@ -14,8 +14,6 @@ import type { Task } from '../../types/task';
 interface HeaderProps {
   isDarkMode: boolean;
   onThemeToggle: () => void;
-  autoAssignTime: boolean;
-  onAutoAssignTimeToggle: () => void;
   tasks: Task[];
   categories: CategoryPreference[];
   onCategoryAdd: (category: Omit<CategoryPreference, 'id'>) => void;
@@ -34,8 +32,6 @@ const defaultCategories: CategoryPreference[] = [
 export const Header: React.FC<HeaderProps> = ({ 
   isDarkMode, 
   onThemeToggle, 
-  autoAssignTime,
-  onAutoAssignTimeToggle,
   tasks,
   categories: propCategories,
   onCategoryAdd: propOnCategoryAdd,
@@ -71,21 +67,6 @@ export const Header: React.FC<HeaderProps> = ({
           Kairos
         </h1>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 mr-2">
-            {/* <Clock className="w-5 h-5 text-gray-500" /> */}
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={autoAssignTime} 
-                onChange={onAutoAssignTimeToggle} 
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-light dark:peer-focus:ring-primary-dark rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-primary-light dark:peer-checked:bg-primary-dark"></div>
-              <span className="ml-2 text-sm font-medium text-gray-900 dark:text-gray-300">
-                Auto-assign time
-              </span>
-            </label>
-          </div>
           <button
             onClick={onThemeToggle}
             className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-gray-800 transition-colors"

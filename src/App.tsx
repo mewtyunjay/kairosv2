@@ -128,8 +128,6 @@ function App() {
       <Header 
         isDarkMode={isDarkMode} 
         onThemeToggle={handleThemeToggle}
-        autoAssignTime={autoAssignTime}
-        onAutoAssignTimeToggle={handleAutoAssignTimeToggle}
         tasks={tasks}
         categories={categories}
         onCategoryAdd={handleCategoryAdd}
@@ -185,6 +183,7 @@ function App() {
         onMultipleTasksAdd={handleMultipleTasksAdd} 
         isEmpty={tasks.length === 0}
         autoAssignTime={autoAssignTime}
+        onAutoAssignTimeToggle={handleAutoAssignTimeToggle}
       />
     </div>
   );

@@ -105,13 +105,13 @@ export const TaskTimeInput: React.FC<TaskTimeInputProps> = ({
       return;
     }
 
-    const [currentStart, currentEnd] = scheduledFor.split(' - ');
+    const [currentStart] = scheduledFor.split(' - ');
     let newSchedule: string;
-    let newDuration = duration;
+    let newDuration = duration || '01:00'; // Ensure duration is never undefined
 
     if (type === 'start') {
       // When start time changes, keep the duration and update end time
-      newSchedule = `${value} - ${calculateEndTime(value, duration || '01:00')}`;
+      newSchedule = `${value} - ${calculateEndTime(value, newDuration)}`;
     } else {
       // When end time changes, keep the start time and update duration
       newSchedule = `${currentStart} - ${value}`;

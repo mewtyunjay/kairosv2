@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Sun, Moon, Clock } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { ProfileButton } from '../profile/ProfileButton';
 import { ProfileModal } from '../profile/ProfileModal';
 import type { CategoryPreference } from '../../types/user';
